@@ -1,0 +1,137 @@
+#
+# © 2024 by Intellectual Reserve, Inc. All rights reserved.
+#
+
+name: frontier-my-world
+version: "1.1"
+builds:
+  - name: npm-build
+    type: build-artifacts
+    version: "1"
+    operations:
+      - name: publish
+    properties:
+      build_tool: npm
+      runtimes:
+        node:
+          version: "20"
+  - name: npm-build-slug
+    type: heroku-slug
+    version: "1"
+    operations:
+      - name: publish
+        needs:
+          - systems.*.check
+          - builds.npm-build.publish
+    properties:
+      heroku_stack: heroku-20
+  - name: code-analysis
+    type: code-analysis
+    version: "1"
+    operations:
+      - name: analyze
+systems:
+  - name: int
+    type: sps
+    version: "1"
+    operations:
+      - name: check
+      - name: deploy
+        needs:
+          - builds.npm-build.publish
+          - builds.npm-build-slug.publish
+      - name: integrate
+      - name: finally
+    properties:
+      services:
+        my-world:
+          type: Heroku v1_0
+          location: development-fh5-useast1-heroku
+          binding_sets:
+            # Replace {{BINDING_PATH}} with your approved service name.
+            # See https://www.familysearch.org/frontier/docs/develop/deployment
+            {{BINDING_PATH}}:
+              - type: Service v1_0
+                sites:
+                  - integ
+                bindings:
+                  heroku: &ref_0
+                    type: Alias v1_0
+                    aliases:
+                      - www
+                    non_ssl_action:
+                      type: redirect_to_https
+                    append_slash: true
+  - name: beta
+    type: sps
+    version: "1"
+    operations:
+      - name: check
+      - name: deploy
+        needs:
+          - builds.npm-build.publish
+          - builds.npm-build-slug.publish
+      - name: integrate
+      - name: finally
+    properties:
+      services:
+        my-world:
+          type: Heroku v1_0
+          location: test-fh3-useast1-heroku
+          binding_sets:
+            # Replace as referenced above.
+            {{BINDING_PATH}}:
+              - type: Service v1_0
+                sites:
+                  - beta
+                bindings:
+                  heroku: *ref_0
+  - name: prod
+    type: sps
+    version: "1"
+    operations:
+      - name: check
+      - name: deploy
+        needs:
+          - builds.npm-build.publish
+          - builds.npm-build-slug.publish
+      - name: integrate
+      - name: finally
+    properties:
+      services:
+        my-world:
+          type: Heroku v1_0
+          location: production-fh1-useast1-heroku
+          binding_sets:
+            # Replace as referenced above.
+            {{BINDING_PATH}}:
+              - type: Service v1_0
+                sites:
+                  - prod
+                bindings:
+                  heroku: *ref_0
+pipelines:
+  - name: continuous-delivery-pr
+    type: pull-request
+    version: "1"
+    operations:
+      - name: start
+    properties:
+      triggers:
+        type: gha
+        "on":
+          pull_request:
+            branches:
+              - "*"
+  - name: continuous-delivery-push
+    type: push-to-master
+    version: "1"
+    operations:
+      - name: start
+    properties:
+      triggers:
+        type: gha
+        "on":
+          push:
+            branches:
+              - master

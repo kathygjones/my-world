@@ -1,0 +1,82 @@
+#
+# © 2024 by Intellectual Reserve, Inc. All rights reserved.
+#
+
+name: CI/CD pull-request 1 continuous-delivery-pr default
+'on':
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  pipelines_continuous-delivery-pr_start:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/pipelines_pull-request_start.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: continuous-delivery-pr
+      needs_blueprint_operations: '[]'
+    needs: []
+  builds_npm-build_publish:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/builds_build-artifacts_publish.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: npm-build
+      needs_blueprint_operations: '["pipelines.continuous-delivery-pr.start"]'
+    needs:
+      - pipelines_continuous-delivery-pr_start
+  systems_int_check:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_check.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: int
+      needs_blueprint_operations: '["pipelines.continuous-delivery-pr.start"]'
+    needs:
+      - pipelines_continuous-delivery-pr_start
+  systems_beta_check:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_check.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: beta
+      needs_blueprint_operations: '["pipelines.continuous-delivery-pr.start"]'
+    needs:
+      - pipelines_continuous-delivery-pr_start
+  systems_prod_check:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_check.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: prod
+      needs_blueprint_operations: '["pipelines.continuous-delivery-pr.start"]'
+    needs:
+      - pipelines_continuous-delivery-pr_start
+  builds_npm-build-slug_publish:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/builds_heroku-slug_publish.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: npm-build-slug
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","systems.int.check","systems.beta.check","systems.prod.check","pipelines.continuous-delivery-pr.start"]
+    needs:
+      - builds_npm-build_publish
+      - systems_int_check
+      - systems_beta_check
+      - systems_prod_check
+      - pipelines_continuous-delivery-pr_start
+  builds_code-analysis_analyze:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/builds_code-analysis_analyze.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: code-analysis
+      needs_blueprint_operations: '["builds.npm-build.publish","pipelines.continuous-delivery-pr.start"]'
+    needs:
+      - builds_npm-build_publish
+      - pipelines_continuous-delivery-pr_start

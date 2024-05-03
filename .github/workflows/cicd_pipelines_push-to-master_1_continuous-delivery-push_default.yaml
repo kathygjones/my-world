@@ -1,0 +1,208 @@
+#
+# © 2024 by Intellectual Reserve, Inc. All rights reserved.
+#
+
+name: CI/CD push-to-master 1 continuous-delivery-push default
+'on':
+  push:
+    branches:
+      - master
+jobs:
+  pipelines_continuous-delivery-push_start:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/pipelines_push-to-master_start.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: continuous-delivery-push
+      needs_blueprint_operations: '[]'
+    needs: []
+  builds_npm-build_publish:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/builds_build-artifacts_publish.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: npm-build
+      needs_blueprint_operations: '["pipelines.continuous-delivery-push.start"]'
+    needs:
+      - pipelines_continuous-delivery-push_start
+  systems_int_check:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_check.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: int
+      needs_blueprint_operations: '["pipelines.continuous-delivery-push.start"]'
+    needs:
+      - pipelines_continuous-delivery-push_start
+  systems_beta_check:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_check.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: beta
+      needs_blueprint_operations: '["pipelines.continuous-delivery-push.start"]'
+    needs:
+      - pipelines_continuous-delivery-push_start
+  systems_prod_check:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_check.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: prod
+      needs_blueprint_operations: '["pipelines.continuous-delivery-push.start"]'
+    needs:
+      - pipelines_continuous-delivery-push_start
+  builds_npm-build-slug_publish:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/builds_heroku-slug_publish.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: npm-build-slug
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","systems.int.check","systems.beta.check","systems.prod.check","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - systems_int_check
+      - systems_beta_check
+      - systems_prod_check
+      - pipelines_continuous-delivery-push_start
+  builds_code-analysis_analyze:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/builds_code-analysis_analyze.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: code-analysis
+      needs_blueprint_operations: '["builds.npm-build.publish","pipelines.continuous-delivery-push.start"]'
+    needs:
+      - builds_npm-build_publish
+      - pipelines_continuous-delivery-push_start
+  systems_int_deploy:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_deploy.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: int
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.int.check","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_int_check
+      - pipelines_continuous-delivery-push_start
+  systems_beta_deploy:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_deploy.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: beta
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.beta.check","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_beta_check
+      - pipelines_continuous-delivery-push_start
+  systems_prod_deploy:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_deploy.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: prod
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.prod.check","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_prod_check
+      - pipelines_continuous-delivery-push_start
+  systems_int_integrate:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_integrate.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: int
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.int.deploy","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_int_deploy
+      - pipelines_continuous-delivery-push_start
+  systems_beta_integrate:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_integrate.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: beta
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.beta.deploy","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_beta_deploy
+      - pipelines_continuous-delivery-push_start
+  systems_prod_integrate:
+    uses: >-
+      fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_integrate.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: prod
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.prod.deploy","pipelines.continuous-delivery-push.start"]
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_prod_deploy
+      - pipelines_continuous-delivery-push_start
+  systems_int_finally:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_finally.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: int
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.int.deploy","systems.int.integrate","pipelines.continuous-delivery-push.start"]
+    if: ${{ !cancelled() }}
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_int_deploy
+      - systems_int_integrate
+      - pipelines_continuous-delivery-push_start
+  systems_beta_finally:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_finally.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: beta
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.beta.deploy","systems.beta.integrate","pipelines.continuous-delivery-push.start"]
+    if: ${{ !cancelled() }}
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_beta_deploy
+      - systems_beta_integrate
+      - pipelines_continuous-delivery-push_start
+  systems_prod_finally:
+    uses: fs-cicd/paas-cicd-workflows/.github/workflows/systems_sps_finally.yaml@v1
+    secrets:
+      SPLUNK_TOKEN: ${{ secrets.SPLUNK_TOKEN }}
+    with:
+      blueprint_component_name: prod
+      needs_blueprint_operations: >-
+        ["builds.npm-build.publish","builds.npm-build-slug.publish","systems.prod.deploy","systems.prod.integrate","pipelines.continuous-delivery-push.start"]
+    if: ${{ !cancelled() }}
+    needs:
+      - builds_npm-build_publish
+      - builds_npm-build-slug_publish
+      - systems_prod_deploy
+      - systems_prod_integrate
+      - pipelines_continuous-delivery-push_start
