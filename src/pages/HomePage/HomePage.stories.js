@@ -1,8 +1,8 @@
 import React from 'react'
 
 import HomePageComponent from './HomePage'
-import WagonWheelComponent from './WagonWheel'
-import PurposeStatementGeneratorComponent from './PurposeStatementGenerator'
+import WagonWheelComponent from '../../components/example/WagonWheel'
+import PurposeStatementGeneratorComponent from '../../components/example/PurposeStatementGenerator'
 
 export default {
   title: 'Home Page',

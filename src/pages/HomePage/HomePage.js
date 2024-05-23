@@ -1,12 +1,7 @@
 import React from 'react'
-import { colors, Grid, Image, LayoutBand, Separator, useContainerWidth, H1, H2, Subheading } from '@fs/zion-ui'
+import { colors, Grid, LayoutBand, Separator, useContainerWidth, H1, H2, Subheading } from '@fs/zion-ui'
 
 import { css } from '@emotion/core'
-
-import leaves from './leaves.jpg'
-import smallLeaves from './small-leaves.svg'
-import Resources from './Resources'
-import ComponentExamples from './ComponentExamples'
 
 const backdropCss = css`
   backdrop-filter: blur(10px);
@@ -17,13 +12,7 @@ const HomePage = () => {
 
   return (
     <>
-      <LayoutBand
-        marginY="md"
-        alignY="middle"
-        image={leaves}
-        minHeight={600}
-        css={atWidth({ default: backdropCss, lg: null })}
-      >
+      <LayoutBand marginY="md" alignY="middle" minHeight={600} css={atWidth({ default: backdropCss, lg: null })}>
         <Grid>
           <div columns={atWidth({ default: 12, lg: 6 })} css={atWidth({ default: backdropCss, lg: null })}>
             <H1 size="H3">
@@ -41,7 +30,6 @@ const HomePage = () => {
           <Subheading>Check out the resources below and reach out on Slack if you need additional support.</Subheading>
         </H2>
         <Separator size="xxl" />
-        <Resources />
       </LayoutBand>
       <LayoutBand marginY="xxl" alignY="middle">
         <H2 centered size="H3">
@@ -63,10 +51,8 @@ const HomePage = () => {
               in the code as you explore.
             </Subheading>
           </H2>
-          <Image columns={6} src={smallLeaves} />
         </Grid>
       </LayoutBand>
-      <ComponentExamples />
       <LayoutBand marginY="xxl" color={colors.green03}>
         <H2 size="H3" centered>
           This starter file is created by Frontier Core. We are here to help. If you have any questions about this app
