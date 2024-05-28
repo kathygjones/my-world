@@ -34,7 +34,6 @@ function NavLink({ name, path, selectedTab, setSelectedTab }) {
   return (
     <Link to={path} onClick={() => setSelectedTab(name)}>
       <span is-selected={selectedTab === name}>{name}</span>
-      {name}
     </Link>
   )
 }

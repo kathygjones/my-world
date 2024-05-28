@@ -1,7 +1,9 @@
 import React, { Suspense } from 'react'
 import { Switch, Route, AuthRoute, NotFound } from '@fs/zion-router'
 import ErrorBoundary from '@fs/zion-error-boundary'
+
 import HomePageSkeleton from './pages/HomePage/HomePageSkeleton'
+import Navigation from './components/Navigation'
 
 // Dynamically load components to reduce bundle size
 // https://reactjs.org/docs/react-api.html#reactlazy
@@ -14,6 +16,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Suspense fallback={<HomePageSkeleton />}>
+        <Navigation />
         <Switch>
           <Route exact path="/" component={HomePage} />
           <AuthRoute path="/vending-machine" component={VendingMachine} />
